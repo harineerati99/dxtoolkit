@@ -219,6 +219,40 @@ class AnalyticObj:
         idx = int(round(percentile * (len(sorted_arr) - 1)))
         return sorted_arr[idx]
 
+    def calc_avg(self, arr):
+        """Calculate arithmetic mean of a numeric list. Returns float 0 if empty."""
+        try:
+            if not arr:
+                return 0.0
+            s = sum([float(x) for x in arr])
+            return s / len(arr)
+        except Exception:
+            return 0.0
+
+    def get_avg(self, stat, client='none'):
+        """Return average for a given stat across the first aggregation timestamp.
+
+        Mirrors Perl Analytics_obj::get_avg behavior: returns "-1" (as int) when
+        no data is available, otherwise formatted string with 2 decimals (e.g. "12.34").
+        """
+        if not hasattr(self, 'aggreg') or not self.aggreg:
+            return -1
+
+        # take first timestamp
+        timestamp = next(iter(self.aggreg.keys()), None)
+        if not timestamp:
+            return -1
+
+        if client not in self.aggreg.get(timestamp, {}):
+            return -1
+
+        values = sorted(self.aggreg[timestamp][client].get(stat, []))
+        if not values:
+            return -1
+
+        avg = self.calc_avg(values)
+        return f"{avg:.2f}"
+
     def doAggregation_worker(self, metrics_str):
         """Process aggregations: compute min/max/85pct for each metric (like Perl).
         
